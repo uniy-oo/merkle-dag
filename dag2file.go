@@ -56,4 +56,22 @@ func getFileByDir(obj Object, pathArr []string, cur int, store KVStore) []byte {
 	}
 	return nil
 }
-
+func getFileByList(obj Object, store KVStore) []byte {
+	ans := make([]byte, 0)
+	index := 0
+	for i := range obj.Links {
+		curObjType := string(obj.Data[index : index+4])
+		index += 4
+		curObjLink := obj.Links[i]
+		curObjBinary, _ := store.Get(curObjLink.Hash)
+		var curObj Object
+		json.Unmarshal(curObjBinary, &curObj)
+		if curObjType == BLOB {
+			ans = append(ans, curObjBinary...)
+		} else { //List
+			tmp := getFileByList(curObj, store)
+			ans = append(ans, tmp...)
+		}
+	}
+	return ans
+}
